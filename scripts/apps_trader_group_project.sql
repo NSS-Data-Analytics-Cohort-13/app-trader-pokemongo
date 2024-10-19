@@ -36,7 +36,7 @@ WHERE p.rating IS NOT NULL AND p.rating >= 4.5
 ORDER BY p.name, p.rating
 */
 
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 WITH Agg_Data AS (SELECT 	p.name AS Name
 	,	a.name AS Apple_Name
@@ -60,17 +60,17 @@ WHERE p.rating IS NOT NULL AND p.rating >= 4.5
 	AND a.review_count IS NOT NULL
 ORDER BY p.name, p.rating),
 
-Main_Table AS	(SELECT 	p.name AS name
-		, 	CASE 
-				WHEN	CAST(AVG(agg_data.Play_Rating + agg_data.Apple_Rating)/2 AS numeric) >= 4.75 THEN '5'
-				WHEN	CAST(AVG(agg_data.Play_Rating + agg_data.Apple_Rating)/2 AS numeric) < 4.75 THEN '4.5'
-					ELSE '0'
-					END AS Rating
-		, 	CASE
-				WHEN	AVG(CAST(agg_data.play_price AS numeric)+agg_data.apple_price) <= 1 Then '1'
-				WHEN 	AVG(CAST(agg_data.play_price AS numeric)+agg_data.apple_price) > 1 Then '0'
-					ELSE '0'
-					END AS Price
+Main_Table AS (	SELECT 	p.name AS name
+		, 		CASE 
+					WHEN	CAST(AVG(agg_data.Play_Rating + agg_data.Apple_Rating)/2 AS numeric) >= 4.75 THEN '5'
+					WHEN	CAST(AVG(agg_data.Play_Rating + agg_data.Apple_Rating)/2 AS numeric) < 4.75 THEN '4.5'
+						ELSE '0'
+						END AS Rating
+		, 		CASE
+					WHEN	AVG(CAST(agg_data.play_price AS numeric)+agg_data.apple_price) <= 1 Then '1'
+					WHEN 	AVG(CAST(agg_data.play_price AS numeric)+agg_data.apple_price) > 1 Then '0'
+						ELSE '0'
+						END AS Price
 	,	SUM(agg_data.Play_Rev_Count+CAST(agg_data.Apple_Rev_Count AS int)) AS Total_Review_Count
 FROM play_store_apps AS p
 FULL JOIN agg_data 
@@ -125,7 +125,7 @@ TOP_10 AS (SELECT 	DISTINCT strategy_table.name AS Top_10_Name
 				OR name iLIKE	'Clash Royale'
 				OR name iLIKE	'Subway Surfers'
 				OR name iLIKE	'My Talking Tom'),
-
+				
 Monthly_Numbers AS (SELECT	top_10.top_10_name
 	,	SUM(top_10.cost) AS initial_cost
 	,	SUM(marketing_count * 1000)::MONEY AS monthly_marketing_cost
@@ -145,16 +145,22 @@ FROM monthly_numbers
 GROUP BY app_name, yrs_runway),
 
 Lifespan_Numbers AS (SELECT 	yearly_numbers.app_name AS app_name
+	,	SUM(top_10.cost) AS initial_cost
 	,	SUM(yearly_numbers.yearly_revenue * yearly_numbers.yrs_runway) AS Lifespan_Revenue
 	,	SUM(yearly_numbers.yearly_marketing * yearly_numbers.yrs_runway) AS Lifespan_Marketing_Cost
 	,	SUM(yearly_numbers.yearly_net_profit * yearly_numbers.yrs_runway) AS Lifespan_Net_Profit
 FROM yearly_numbers
+LEFT JOIN top_10
+		ON yearly_numbers.app_name = top_10.top_10_name
 GROUP BY yearly_numbers.app_name)
 
 SELECT 	SUM(lifespan_revenue) AS Total_Revenue
 	, 	SUM(lifespan_marketing_cost) AS Total_Marketing_Cost
-	, 	SUM(lifespan_net_profit) AS Total_Net_Profit
+	,	SUM(initial_cost) AS Initial_Cost
+	, 	SUM(lifespan_net_profit - initial_cost) AS Total_Net_Profit
 FROM lifespan_numbers
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 --Strategy
 
